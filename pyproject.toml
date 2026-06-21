@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=72", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "knowledgebase"
+version = "0.1.0"
+description = "AI-powered enterprise knowledge base using RAG"
+requires-python = ">=3.9"
+dependencies = [
+    "llama-index-core",
+    "llama-index-readers-file",
+    "llama-index-embeddings-huggingface",
+    "llama-index-llms-ollama",
+    "llama-index-vector-stores-weaviate",
+    "weaviate-client",
+    "sentence-transformers",
+    "streamlit",
+]
+
+[project.scripts]
+ingest = "indexing.ingest:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["indexing*", "rag_pipeline*", "ui*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true

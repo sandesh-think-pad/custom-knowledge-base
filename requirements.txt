@@ -1,0 +1,8 @@
+llama-index-core
+llama-index-readers-file
+llama-index-embeddings-huggingface
+llama-index-llms-ollama
+llama-index-vector-stores-weaviate
+weaviate-client
+sentence-transformers
+streamlit

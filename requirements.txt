@@ -5,4 +5,6 @@ llama-index-llms-ollama
 llama-index-vector-stores-weaviate
 weaviate-client
 sentence-transformers
+torch
+torchvision
 streamlit

@@ -6,7 +6,7 @@ from llama_index.core.postprocessor import (
 )
 from llama_index.llms.ollama import Ollama
 
-from config import LLM_MODEL, RERANK_MODEL
+from config import LLM_MODEL, RERANK_MODEL, OLLAMA_HOST
 
 _QA_PROMPT = PromptTemplate(
     """You are a knowledgeable assistant for the internal knowledge base.
@@ -30,6 +30,7 @@ class RAGQueryEngine:
     def __init__(self, retriever):
         llm = Ollama(
             model=LLM_MODEL,
+            base_url=OLLAMA_HOST,
             temperature=0.1,
             context_window=8192,
             request_timeout=120.0,

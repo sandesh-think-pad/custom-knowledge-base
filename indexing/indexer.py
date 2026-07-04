@@ -21,6 +21,8 @@ class WeaviateIndexer:
         self._client = weaviate.connect_to_local(host=host, port=port, grpc_port=grpc_port)
 
     def create_schema(self):
+        if self._client.collections.exists(self.collection_name):
+            self._client.collections.delete(self.collection_name)
         self._client.collections.create(
             name=self.collection_name,
             vector_config=Configure.Vectors.text2vec_model2vec(),

@@ -1,0 +1,66 @@
+services:
+
+  # ── Vector database ────────────────────────────────────────────────────────
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.36.0
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      ENABLE_MODULES: text2vec-model2vec
+      MODEL2VEC_INFERENCE_API: http://text2vec-model2vec:8080
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Embedding sidecar (used during document insert) ───────────────────────
+  text2vec-model2vec:
+    image: cr.weaviate.io/semitechnologies/model2vec-inference:minishlab-potion-base-32M
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/.well-known/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Ingestion pipeline (runs once, then exits) ────────────────────────────
+  ingest:
+    build: .
+    command: python -m indexing.ingest
+    volumes:
+      # Mount your documents folder: override DOCUMENTS_PATH in .env or export it.
+      # Default: ./knowledgesrc  (relative to this file)
+      - ${DOCUMENTS_PATH:-./knowledgesrc}:/data/documents:ro
+    environment:
+      WEAVIATE_HOST: weaviate
+      KNOWLEDGE_SRC_DIR: /data/documents
+      # Ollama runs natively on the Mac host; Docker Desktop exposes it via host.docker.internal.
+      # On Linux, replace with: http://host.docker.internal:11434 and add extra_hosts below.
+      OLLAMA_HOST: http://host.docker.internal:11434
+    depends_on:
+      weaviate:
+        condition: service_healthy
+      text2vec-model2vec:
+        condition: service_healthy
+    # Uncomment on Linux (Docker Desktop for Mac resolves host.docker.internal automatically):
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+
+  # ── Streamlit chat UI ─────────────────────────────────────────────────────
+  ui:
+    build: .
+    command: streamlit run ui/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      WEAVIATE_HOST: weaviate
+      OLLAMA_HOST: http://host.docker.internal:11434
+    depends_on:
+      ingest:
+        condition: service_completed_successfully
+    # Uncomment on Linux:
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"

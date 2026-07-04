@@ -2,7 +2,7 @@ from llama_index.core import Settings
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
 
-from config import QUERY_EMBED_MODEL, LLM_MODEL
+from config import QUERY_EMBED_MODEL, LLM_MODEL, OLLAMA_HOST
 from .connector import VectorStoreConnector
 from .retriever import HybridRetriever
 from .query_engine import RAGQueryEngine
@@ -13,7 +13,7 @@ class KnowledgeBasePipeline:
 
     def __init__(self):
         Settings.embed_model = HuggingFaceEmbedding(model_name=QUERY_EMBED_MODEL)
-        Settings.llm = Ollama(model=LLM_MODEL, request_timeout=360.0)
+        Settings.llm = Ollama(model=LLM_MODEL, base_url=OLLAMA_HOST, request_timeout=360.0)
 
     def query(self, question: str) -> str:
         with VectorStoreConnector() as connector:

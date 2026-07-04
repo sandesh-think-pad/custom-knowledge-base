@@ -2,7 +2,7 @@ import weaviate
 from llama_index.core import VectorStoreIndex, StorageContext
 from llama_index.vector_stores.weaviate import WeaviateVectorStore
 
-from config import WEAVIATE_COLLECTION
+from config import WEAVIATE_COLLECTION, WEAVIATE_HOST, WEAVIATE_PORT, WEAVIATE_GRPC_PORT
 
 
 class VectorStoreConnector:
@@ -13,7 +13,11 @@ class VectorStoreConnector:
         self._client = None
 
     def build_index(self) -> VectorStoreIndex:
-        self._client = weaviate.connect_to_local()
+        self._client = weaviate.connect_to_local(
+            host=WEAVIATE_HOST,
+            port=WEAVIATE_PORT,
+            grpc_port=WEAVIATE_GRPC_PORT,
+        )
         vector_store = WeaviateVectorStore(
             weaviate_client=self._client,
             index_name=self.collection_name,

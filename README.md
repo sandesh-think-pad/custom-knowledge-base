@@ -97,80 +97,79 @@ knowledgebase/
 
 | Requirement | Notes |
 |---|---|
-| Python 3.9+ | `zoneinfo` requires 3.9 |
-| Docker + Docker Compose | For Weaviate |
-| [Ollama](https://ollama.com/) | Local LLM inference |
-| 16 GB RAM / GPU memory | For llama3.1:8b; 80 GB for 70b |
+| Docker + Docker Compose | Runs Weaviate, ingest, and the UI |
+| [Ollama](https://ollama.com/) | Installed and running **natively** on the host (not in Docker) |
+| 16 GB RAM / GPU memory | For llama3.1:8b; Apple Silicon uses Metal automatically via native Ollama |
+
+> **Mac Apple Silicon note:** Docker containers cannot access Metal GPU. Ollama must run natively on the host so it can use the Neural Engine / GPU. Containers reach it via `host.docker.internal:11434`, which Docker Desktop resolves automatically.
 
 ---
 
 ## Setup
 
-### 1. Clone and install dependencies
+### 1. Install and start Ollama
 
-```bash
-git clone <repo-url>
-cd knowledgebase
-pip install -e .
-```
-
-### 2. Pull the LLM
+Download from [ollama.com](https://ollama.com), then pull the model:
 
 ```bash
 ollama pull llama3.1:latest
 ```
 
-### 3. Start Weaviate
+Ollama starts automatically as a background service after install. Verify it is running:
 
 ```bash
-docker compose -f weaviate/docker-compose.yml up -d
+ollama list
 ```
 
-This starts two containers:
-- **weaviate** — vector database on port `8080` (HTTP) and `50051` (gRPC)
-- **text2vec-model2vec** — lightweight embedding sidecar used during insert
+### 2. Add your documents
 
-### 4. Add your documents
-
-Place PDF files in a `knowledgesrc/` folder one level above the project root:
+Drop PDF files into the `knowledgesrc/` folder at the project root:
 
 ```
-parent-directory/
-├── knowledgesrc/       ← put your PDFs here
-│   ├── hr-policy.pdf
-│   └── onboarding-guide.pdf
-└── knowledgebase/      ← this repo
+knowledgebase/
+└── knowledgesrc/       ← put your PDFs here
+    ├── hr-policy.pdf
+    └── onboarding-guide.pdf
 ```
 
-To change the source path, edit `KNOWLEDGE_SRC_DIR` in [config.py](config.py).
-
-### 5. Index your documents
+To use a different folder, set `DOCUMENTS_PATH` in a `.env` file:
 
 ```bash
-python -m indexing.ingest
+cp .env.example .env
+# edit .env and set DOCUMENTS_PATH=/absolute/path/to/your/docs
 ```
 
-Or if installed via `pip install -e .`:
+### 3. Start everything
 
 ```bash
-ingest
+docker compose up --build
 ```
 
-This will:
-1. Load all PDFs from `knowledgesrc/`
-2. Parse them into sentence-window nodes
-3. Create the `EnterpriseKB` collection in Weaviate
-4. Embed and insert all nodes
+Docker Compose starts services in order:
 
-Re-run this command whenever documents change (only changed files need re-indexing in production).
-
-### 6. Start the chat UI
-
-```bash
-streamlit run ui/app.py
-```
+1. **weaviate** + **text2vec-model2vec** — wait until healthy
+2. **ingest** — indexes all documents from `knowledgesrc/`, then exits
+3. **ui** — starts only after ingest completes successfully
 
 Open [http://localhost:8501](http://localhost:8501) and ask questions about your documents.
+
+### 4. Re-index after document changes
+
+Add or replace files in `knowledgesrc/`, then run:
+
+```bash
+docker compose up --build
+```
+
+The ingest service drops and recreates the collection on every run, so the index always reflects the current contents of the folder.
+
+### Running without Docker (development)
+
+```bash
+pip install -e .
+python -m indexing.ingest   # Weaviate must be running separately
+streamlit run ui/app.py
+```
 
 ---
 

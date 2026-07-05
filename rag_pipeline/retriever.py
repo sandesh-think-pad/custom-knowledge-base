@@ -15,7 +15,7 @@ class HybridRetriever:
             search_kwargs={
                 "where_filter": (
                     Filter.by_property("department").equal("HR")
-                    & Filter.by_property("classification").equal("confidential")
+                    & Filter.by_property("classification").equal("Confidential")
                 )
             },
         )
